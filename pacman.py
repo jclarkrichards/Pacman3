@@ -110,9 +110,17 @@ class Pacman(MazeRunner):
             return True
         return False
 
-    def render(self, screen):
-        MazeRunner.render(self, screen)
-        for i in range(self.lives-1):
-            x = 5 + self.radius + (2*self.radius + 5)*i
-            y = TILEHEIGHT *(NROWS-1)
-            pygame.draw.circle(screen, self.color, (x, y), self.radius)
+
+
+class LifeIcon(object):
+    def __init__(self):
+        self.image = pygame.image.load("Images/pacman_single.png").convert()
+        self.image.set_colorkey(TRANSPARENT)
+        self.width, self.height = self.image.get_size()
+        self.gap = 10
+
+    def render(self, screen, num):
+        for i in range(num):
+            x = self.gap + (self.width + self.gap) * i
+            y = TILEHEIGHT * NROWS - self.height
+            screen.blit(self.image, (x, y))

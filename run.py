@@ -1,7 +1,7 @@
 import pygame
 from pygame.locals import *
 from constants import *
-from pacman import Pacman
+from pacman import Pacman, LifeIcon
 from nodes import NodeGroup
 from pellets import PelletGroup
 from ghosts import GhostGroup
@@ -27,6 +27,7 @@ class GameController(object):
         self.paused = True
         self.fruit = None
         self.pelletsEaten = 0
+        self.lifeIcons = LifeIcon()
         
     def restartLevel(self):
         self.pacman.reset()
@@ -93,6 +94,7 @@ class GameController(object):
             self.fruit.render(self.screen)
         self.pacman.render(self.screen)
         self.ghosts.render(self.screen)
+        self.lifeIcons.render(self.screen, self.pacman.lives-1)
         pygame.display.update()
 
 
