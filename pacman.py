@@ -3,17 +3,24 @@ from pygame.locals import *
 from vector import Vector2
 from constants import *
 from entity import MazeRunner
+from animation import Animation
 
 class Pacman(MazeRunner):
-    def __init__(self, nodes):
-        MazeRunner.__init__(self, nodes)
+    def __init__(self, nodes, spritesheet):
+        MazeRunner.__init__(self, nodes, spritesheet)
+        self.startImage = spritesheet.getImage(4,0,32,32)
+        self.image = self.startImage
         self.name = "pacman"
         self.color = YELLOW
         self.setStartPosition()
         self.lives = 5
-
+        self.animation = None
+        self.animations = {}
+        self.defineAnimations()
+        
     def reset(self):
         self.setStartPosition()
+        self.image = self.startImage#########
         
     def update(self, dt):
         self.position += self.direction*self.speed*dt
@@ -22,6 +29,20 @@ class Pacman(MazeRunner):
             self.moveByKey(direction)
         else:
             self.moveBySelf()
+        self.updateAnimation(dt)
+
+    def updateAnimation(self, dt): 
+        if self.direction == UP: 
+            self.animation = self.animations["up"] 
+        elif self.direction == DOWN: 
+            self.animation = self.animations["down"] 
+        elif self.direction == LEFT: 
+            self.animation = self.animations["left"] 
+        elif self.direction == RIGHT: 
+            self.animation = self.animations["right"] 
+        elif self.direction == STOP: 
+            self.animation = self.animations["idle"] 
+        self.image = self.animation.getFrame(dt) 
 
     def getValidKey(self):
         key_pressed = pygame.key.get_pressed()
@@ -110,15 +131,61 @@ class Pacman(MazeRunner):
             return True
         return False
 
+    def defineAnimations(self): 
+        anim = Animation("ping")
+        anim.speed = 20
+        anim.addFrame(self.spritesheet.getImage(4, 0, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(0, 0, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(0, 1, 32, 32))
+        self.animations["left"] = anim
+
+        anim = Animation("ping")
+        anim.speed = 20
+        anim.addFrame(self.spritesheet.getImage(4, 0, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(1, 0, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(1, 1, 32, 32))
+        self.animations["right"] = anim
+
+        anim = Animation("ping")
+        anim.speed = 20
+        anim.addFrame(self.spritesheet.getImage(4, 0, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(2, 0, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(2, 1, 32, 32))
+        self.animations["down"] = anim
+
+        anim = Animation("ping")
+        anim.speed = 20
+        anim.addFrame(self.spritesheet.getImage(4, 0, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(3, 0, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(3, 1, 32, 32))
+        self.animations["up"] = anim
+
+        anim = Animation("once")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(0, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(1, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(2, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(3, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(4, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(5, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(6, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(7, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(8, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(9, 7, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(10, 7, 32, 32))
+        self.animations["death"] = anim
+
+        anim = Animation("static")
+        anim.addFrame(self.spritesheet.getImage(4, 0, 32, 32))
+        self.animations["idle"] = anim 
 
 
 class LifeIcon(object):
-    def __init__(self):
-        self.image = pygame.image.load("Images/pacman_single.png").convert()
-        self.image.set_colorkey(TRANSPARENT)
-        self.width, self.height = self.image.get_size()
+    def __init__(self, spritesheet):
+        self.width, self.height = 32, 32
+        self.image = spritesheet.getImage(0,1,self.width,self.height)
         self.gap = 10
-
+        
     def render(self, screen, num):
         for i in range(num):
             x = self.gap + (self.width + self.gap) * i

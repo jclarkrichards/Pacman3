@@ -5,10 +5,11 @@ from entity import MazeRunner
 from random import randint
 from modes import Mode
 from stack import Stack
+from animation import Animation
 
 class Ghost(MazeRunner):
-    def __init__(self, nodes):
-        MazeRunner.__init__(self, nodes)
+    def __init__(self, nodes, spritesheet):
+        MazeRunner.__init__(self, nodes, spritesheet)
         self.name = "ghost"
         self.goal = Vector2()
         self.modeStack = self.setupModeStack()
@@ -20,6 +21,9 @@ class Ghost(MazeRunner):
         self.setStartPosition()
         self.released = True
         self.pelletsForRelease = 0
+        self.animation = None
+        self.animations = {}
+        self.free = True
         
     def update(self, dt, pacman, blinky):
         speedMod = self.speed * self.mode.speedMult
@@ -33,7 +37,45 @@ class Ghost(MazeRunner):
             self.randomGoal()
         elif self.mode.name == "SPAWN":
             self.spawnGoal()
+
         self.moveBySelf()
+        self.updateAnimation(dt)
+        #if self.name == "pinky":
+        #    print(self.mode.name)
+
+    def updateAnimation(self, dt):
+        if self.mode.name in ["CHASE", "SCATTER", "GUIDE"]:
+            if self.direction == UP: 
+                self.animation = self.animations["up"] 
+            elif self.direction == DOWN: 
+                self.animation = self.animations["down"] 
+            elif self.direction == LEFT: 
+                self.animation = self.animations["left"] 
+            elif self.direction == RIGHT: 
+                self.animation = self.animations["right"] 
+        elif self.mode.name == "FREIGHT": 
+            self.animation = self.animations["freight"] 
+        elif self.mode.name == "SPAWN":
+            if self.free:
+                if self.direction == UP: 
+                    self.animation = self.animations["spawnup"] 
+                elif self.direction == DOWN: 
+                    self.animation = self.animations["spawndown"] 
+                elif self.direction == LEFT: 
+                    self.animation = self.animations["spawnleft"] 
+                elif self.direction == RIGHT: 
+                    self.animation = self.animations["spawnright"]
+            else:
+                if self.direction == UP: 
+                    self.animation = self.animations["up"] 
+                elif self.direction == DOWN: 
+                    self.animation = self.animations["down"] 
+                elif self.direction == LEFT: 
+                    self.animation = self.animations["left"] 
+                elif self.direction == RIGHT: 
+                    self.animation = self.animations["right"] 
+                
+        self.image = self.animation.getFrame(dt)
 
     def scatterGoal(self):
         self.goal = Vector2(SCREENSIZE[0], 0)
@@ -81,11 +123,12 @@ class Ghost(MazeRunner):
             self.setPosition()
             if self.mode.name == "SPAWN":
                 if self.position == self.goal:
-                    self.mode = Mode("GUIDE", speedMult=0.2)
+                    self.mode = Mode("GUIDE", speedMult=0.5)
             if self.mode.name == "GUIDE":
                 if self.guide.isEmpty():
                     self.mode = self.modeStack.pop()
                     self.setGuideStack()
+                    self.free = True
                 else:
                     self.direction = self.guide.pop()
                     self.target = self.node.neighbors[self.direction]
@@ -122,18 +165,19 @@ class Ghost(MazeRunner):
         return modes
 
     def freightMode(self):
-        if self.mode.name != "SPAWN":
-            if self.mode.name != "FREIGHT":
-                if self.mode.time is not None:
-                    dt = self.mode.time - self.modeTimer
-                    self.modeStack.push(Mode(name=self.mode.name, time=dt))
-                else:
-                    self.modeStack.push(Mode(name=self.mode.name))
-                self.mode = Mode("FREIGHT", time=7, speedMult=0.5)
-                self.modeTimer = 0
-            else:
-                self.mode = Mode("FREIGHT", time=7, speedMult=0.5)
-                self.modeTimer = 0
+        if self.released:
+            if self.mode.name != "SPAWN":
+                if self.mode.name != "FREIGHT": #In SCATTER, CHASE, or GUIDE
+                    if self.mode.time is not None:
+                        dt = self.mode.time - self.modeTimer
+                        self.modeStack.push(Mode(name=self.mode.name, time=dt))
+                    else:
+                        self.modeStack.push(Mode(name=self.mode.name))
+                    self.mode = Mode("FREIGHT", time=7, speedMult=0.5)
+                    self.modeTimer = 0
+                else: #already in FREIGHT mode, so just reset the mode
+                    self.mode = Mode("FREIGHT", time=7, speedMult=0.5)
+                    self.modeTimer = 0
 
     def randomGoal(self):
         x = randint(0, NCOLS*TILEWIDTH)
@@ -168,17 +212,78 @@ class Ghost(MazeRunner):
         self.target = self.node
         self.setPosition()
 
+    def defineAnimations(self, row): 
+        anim = Animation("loop")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(0, row, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(1, row, 32, 32))
+        self.animations["up"] = anim
 
+        anim = Animation("loop")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(2, row, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(3, row, 32, 32))
+        self.animations["down"] = anim
+
+        anim = Animation("loop")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(4, row, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(5, row, 32, 32))
+        self.animations["left"] = anim
+        
+        anim = Animation("loop")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(6, row, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(7, row, 32, 32))
+        self.animations["right"] = anim
+        
+        anim = Animation("loop")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(0, 6, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(1, 6, 32, 32))
+        self.animations["freight"] = anim
+        
+        anim = Animation("loop")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(2, 6, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(3, 6, 32, 32))
+        self.animations["flash"] = anim
+        
+        anim = Animation("static")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(4, 6, 32, 32))
+        self.animations["spawnup"] = anim
+        
+        anim = Animation("static")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(5, 6, 32, 32))
+        self.animations["spawndown"] = anim
+        
+        anim = Animation("static")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(6, 6, 32, 32))
+        self.animations["spawnleft"] = anim
+        
+        anim = Animation("static")
+        anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(7, 6, 32, 32))
+        self.animations["spawnright"] = anim
+
+        
 class Blinky(Ghost):
-    def __init__(self, nodes):
-        Ghost.__init__(self, nodes)
+    def __init__(self, nodes, spritesheet):
+        Ghost.__init__(self, nodes, spritesheet)
+        self.image = self.spritesheet.getImage(4,2,32,32)
+        self.defineAnimations(2)
         self.name = "blinky"
         self.color = RED
 
-
+        
 class Pinky(Ghost):
-    def __init__(self, nodes):
-        Ghost.__init__(self, nodes)
+    def __init__(self, nodes, spritesheet):
+        Ghost.__init__(self, nodes, spritesheet)
+        self.image = self.spritesheet.getImage(0,3,32,32)
+        self.defineAnimations(3)
         self.name = "pinky"
         self.color = PINK
 
@@ -196,11 +301,14 @@ class Pinky(Ghost):
 
         
 class Inky(Ghost):
-    def __init__(self, nodes):
-        Ghost.__init__(self, nodes)
+    def __init__(self, nodes, spritesheet):
+        Ghost.__init__(self, nodes, spritesheet)
+        self.image = self.spritesheet.getImage(2,4,32,32)
+        self.defineAnimations(4)
         self.name = "inky"
         self.color = TEAL
         self.released = False
+        self.free = False
         self.pelletsForRelease = 30
         
     def scatterGoal(self):
@@ -221,11 +329,14 @@ class Inky(Ghost):
 
         
 class Clyde(Ghost):
-    def __init__(self, nodes):
-        Ghost.__init__(self, nodes)
+    def __init__(self, nodes, spritesheet):
+        Ghost.__init__(self, nodes, spritesheet)
+        self.image = self.spritesheet.getImage(2,5,32,32)
+        self.defineAnimations(5)
         self.name = "clyde"
         self.color = ORANGE
         self.released = False
+        self.free = False
         self.pelletsForRelease = 60
         
     def scatterGoal(self):
@@ -249,10 +360,14 @@ class Clyde(Ghost):
 
         
 class GhostGroup(object):
-    def __init__(self, nodes):
+    def __init__(self, nodes, spritesheet):
         self.nodes = nodes
-        self.ghosts = [Blinky(nodes), Pinky(nodes), Inky(nodes), Clyde(nodes)]
-
+        self.ghosts = [Blinky(nodes, spritesheet),
+                       Pinky(nodes, spritesheet),
+                       Inky(nodes, spritesheet),
+                       Clyde(nodes, spritesheet)]
+        self.points = 200
+        
     def __iter__(self):
         return iter(self.ghosts)
 
@@ -271,7 +386,13 @@ class GhostGroup(object):
                     ghost.bannedDirections = []
                     ghost.spawnMode()
                     ghost.released = True
-                    
+
+    def resetPoints(self):
+        self.points = 200
+
+    def doublePoints(self):
+        self.points *= 2
+        
     def render(self, screen):
         for ghost in self:
             ghost.render(screen)

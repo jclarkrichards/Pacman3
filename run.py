@@ -6,6 +6,9 @@ from nodes import NodeGroup
 from pellets import PelletGroup
 from ghosts import GhostGroup
 from fruit import Fruit
+from sprites import Spritesheet
+from maze import Maze
+from text import Text
 
 class GameController(object):
     def __init__(self):
@@ -14,26 +17,43 @@ class GameController(object):
         self.background = None
         self.setBackground()
         self.clock = pygame.time.Clock()
+        self.hiscore = 0
+        self.hiscoreLabel = Text(str(self.hiscore).zfill(8), WHITE, 0, 16, 16)
+        self.level = 1
+        self.levelLabel = Text(str(self.level).zfill(2), WHITE, 368, 16, 16)
+        self.sheet = Spritesheet()
+        self.maze = Maze(self.sheet)
         
     def setBackground(self):
         self.background = pygame.surface.Surface(SCREENSIZE).convert()
         self.background.fill(BLACK)
 
     def startGame(self):
-        self.nodes = NodeGroup("maze1.txt")
-        self.pellets = PelletGroup("maze1.txt")
-        self.pacman = Pacman(self.nodes)
-        self.ghosts = GhostGroup(self.nodes)
+        self.maze.setup(self.level)
+        self.nodes = NodeGroup(self.maze.filename+".txt")
+        self.pellets = PelletGroup(self.maze.filename+".txt")
+        self.pacman = Pacman(self.nodes, self.sheet)
+        self.ghosts = GhostGroup(self.nodes, self.sheet)
         self.paused = True
         self.fruit = None
         self.pelletsEaten = 0
-        self.lifeIcons = LifeIcon()
+        self.lifeIcons = LifeIcon(self.sheet)
+        self.maze.stitchMaze(self.background)
+        self.hiScoreTxtStatic = Text("HI SCORE", WHITE, 0, 0, 16)
+        self.scoreTxtStatic = Text("SCORE", WHITE, 208, 0, 16)
+        self.levelTxtStatic = Text("LEVEL", WHITE, 368, 0, 16)
+        self.score = 0
+        self.scoreLabel = Text(str(self.score).zfill(8), WHITE, 208, 16, 16)
         
     def restartLevel(self):
         self.pacman.reset()
-        self.ghosts = GhostGroup(self.nodes)
+        self.ghosts = GhostGroup(self.nodes, self.sheet)
         self.paused = True
         self.fruit = None
+
+    def nextLevel(self):
+        self.restartLevel()
+        self.level += 1
         
     def update(self):
         dt = self.clock.tick(30) / 1000.0
@@ -60,14 +80,16 @@ class GameController(object):
         pellet = self.pacman.eatPellets(self.pellets.pelletList)
         if pellet:
             self.pelletsEaten += 1
+            self.updateScores(pellet.points)
+            self.ghosts.resetPoints()
             if (self.pelletsEaten == 70 or self.pelletsEaten == 140):
                 if self.fruit is None:
-                    self.fruit = Fruit(self.nodes)
+                    self.fruit = Fruit(self.nodes, self.sheet)
             self.pellets.pelletList.remove(pellet)
             if pellet.name == "powerpellet":
                 self.ghosts.freightMode()
             if self.pellets.isEmpty():
-                self.startGame()
+                self.nextLevel()
 
     def checkGhostEvents(self):
         self.ghosts.release(self.pelletsEaten)
@@ -75,6 +97,8 @@ class GameController(object):
         if ghost is not None:
             if ghost.mode.name == "FREIGHT":
                 ghost.spawnMode()
+                self.updateScores(self.ghosts.points)
+                self.ghosts.doublePoints()
             elif ghost.mode.name != "SPAWN":
                 if self.pacman.decreaseLives():
                     self.startGame()
@@ -83,18 +107,35 @@ class GameController(object):
 
     def checkFruitEvents(self):
         if self.fruit is not None:
-            if self.pacman.eatFruit(self.fruit) or self.fruit.killme:
+            if self.pacman.eatFruit(self.fruit):
+                self.updateScores(self.fruit.points)
                 self.fruit = None
-                
+            else:
+                if self.fruit.killme:
+                    self.fruit = None
+
+    def updateScores(self, value): 
+        self.score += value
+        self.scoreLabel.updateText(str(self.score).zfill(8))
+        if self.score > self.hiscore: 
+            self.hiscore = self.score
+            self.hiscoreLabel.updateText(str(self.hiscore).zfill(8))
+
     def render(self):
         self.screen.blit(self.background, (0, 0))
-        self.nodes.render(self.screen)
+        #self.nodes.render(self.screen)
         self.pellets.render(self.screen)
         if self.fruit is not None:
             self.fruit.render(self.screen)
         self.pacman.render(self.screen)
         self.ghosts.render(self.screen)
         self.lifeIcons.render(self.screen, self.pacman.lives-1)
+        self.hiScoreTxtStatic.render(self.screen)
+        self.scoreTxtStatic.render(self.screen)
+        self.levelTxtStatic.render(self.screen)
+        self.scoreLabel.render(self.screen)
+        self.hiscoreLabel.render(self.screen)
+        self.levelLabel.render(self.screen)
         pygame.display.update()
 
 

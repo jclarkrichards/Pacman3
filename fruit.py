@@ -3,15 +3,17 @@ from entity import MazeRunner
 from constants import *
 
 class Fruit(MazeRunner):
-    def __init__(self, nodes):
-        MazeRunner.__init__(self, nodes)
+    def __init__(self, nodes, spritesheet):
+        MazeRunner.__init__(self, nodes, spritesheet)
+        self.image = self.spritesheet.getImage(8,2,32,32)
         self.name = "fruit"
         self.color = (0,200,0)
         self.setStartPosition()
         self.lifespan = 5
         self.timer = 0
         self.killme = False
-
+        self.points = 100
+        
     def update(self, dt):
         self.timer += dt
         if self.timer >= self.lifespan:

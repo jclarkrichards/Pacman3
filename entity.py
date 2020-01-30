@@ -3,7 +3,7 @@ from vector import Vector2
 from constants import *
 
 class MazeRunner(object):
-    def __init__(self, nodes):
+    def __init__(self, nodes, spritesheet):
         self.name = "entity"
         self.direction = STOP
         self.speed = 100
@@ -14,6 +14,8 @@ class MazeRunner(object):
         self.node = nodes.nodeList[0]
         self.target = self.node
         self.setPosition()
+        self.image = None
+        self.spritesheet = spritesheet
 
     def setPosition(self):
         self.position = self.node.position.copy()
@@ -57,6 +59,11 @@ class MazeRunner(object):
             self.setPosition()
 
     def render(self, screen):
-        p = self.position.asInt()
-        pygame.draw.circle(screen, self.color, p, self.radius)
+        if self.image is not None: 
+            p = self.position.asTuple()
+            p = (p[0]-TILEWIDTH/2, p[1]-TILEWIDTH/2)
+            screen.blit(self.image, p) 
+        #else:
+        #    p = self.position.asInt()
+        #    pygame.draw.circle(screen, self.color, p, self.radius)
 

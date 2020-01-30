@@ -7,11 +7,12 @@ class Pellet(object):
         self.name = "pellet"
         self.position = Vector2(x, y)
         self.color = YELLOW
-        self.radius = 4
+        self.radius = 2
         self.points = 10
 
     def render(self, screen):
         p = self.position.asInt()
+        p = (int(p[0]+TILEWIDTH/2), int(p[1]+TILEWIDTH/2))
         pygame.draw.circle(screen, self.color, p, self.radius)
 
 
