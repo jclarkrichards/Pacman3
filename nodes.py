@@ -13,6 +13,9 @@ class Node(object):
         self.homeGuide = False
         self.homeEntrance = False
         self.spawnNode = False
+        self.pacmanStart = False
+        self.ghostStart = False
+        self.fruitStart = False
         
     def render(self, screen):
         for n in self.neighbors.keys():
@@ -29,7 +32,7 @@ class NodeGroup(object):
         self.nodeStack = Stack()
         self.pathSymbols = ["p", "P"]
         self.portalSymbols = ["1"]
-        self.nodeSymbols = ["+", "n", "N", "H", "S"] + self.portalSymbols
+        self.nodeSymbols = ["+", "n", "N", "H", "S", "Y", "F"] + self.portalSymbols
         self.grid = self.readMazeFile(level)
         self.homegrid = self.getHomeArray()
         self.createNodeList(self.grid, self.nodeList)
@@ -140,6 +143,10 @@ class NodeGroup(object):
                 node.spawnNode = True
             if grid[row][col] in self.portalSymbols:
                 node.portalVal = grid[row][col]
+            if grid[row][col] == "Y":
+                node.pacmanStart = True
+            if grid[row][col] == "F":
+                node.fruitStart = True
             return node
         else:
             return None
@@ -174,6 +181,7 @@ class NodeGroup(object):
         self.homeList[0].neighbors[RIGHT] = nodeA
         self.homeList[0].neighbors[LEFT] = nodeB
         self.homeList[0].homeEntrance = True
+        self.homeList[0].ghostStart = True
         
     def render(self, screen):
         for node in self.nodeList:

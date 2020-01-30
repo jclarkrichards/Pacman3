@@ -16,13 +16,17 @@ class Ghost(MazeRunner):
         self.modeTimer = 0
         self.spawnNode = self.findSpawnNode()
         self.setGuideStack()
+        self.bannedDirections = []
+        self.setStartPosition()
+        self.released = True
+        self.pelletsForRelease = 0
         
-    def update(self, dt, pacman):
+    def update(self, dt, pacman, blinky):
         speedMod = self.speed * self.mode.speedMult
         self.position += self.direction*speedMod*dt
         self.modeUpdate(dt)
         if self.mode.name == "CHASE":
-            self.chaseGoal(pacman)
+            self.chaseGoal(pacman, blinky)
         elif self.mode.name == "SCATTER":
             self.scatterGoal()
         elif self.mode.name == "FREIGHT":
@@ -34,7 +38,7 @@ class Ghost(MazeRunner):
     def scatterGoal(self):
         self.goal = Vector2(SCREENSIZE[0], 0)
 
-    def chaseGoal(self, pacman):
+    def chaseGoal(self, pacman, blinky=None):
         self.goal = pacman.position
 
     def modeUpdate(self, dt):
@@ -51,7 +55,8 @@ class Ghost(MazeRunner):
                 if key != self.direction * -1:
                     if not self.mode.name == "SPAWN":
                         if not self.node.homeEntrance:
-                            validDirections.append(key)
+                            if key not in self.bannedDirections:
+                                validDirections.append(key)
                         else:
                             if key != DOWN:
                                 validDirections.append(key)
@@ -59,6 +64,7 @@ class Ghost(MazeRunner):
                         validDirections.append(key)
         if len(validDirections) == 0:
             validDirections.append(self.forceBacktrack())
+
         return validDirections
 
     def randomDirection(self, validDirections):
@@ -151,4 +157,121 @@ class Ghost(MazeRunner):
         self.guide = Stack()
         self.guide.push(UP)
     
-    
+    def findStartNode(self):
+        for node in self.nodes.homeList:
+            if node.ghostStart:
+                return node
+        return node
+
+    def setStartPosition(self):
+        self.node = self.findStartNode()
+        self.target = self.node
+        self.setPosition()
+
+
+class Blinky(Ghost):
+    def __init__(self, nodes):
+        Ghost.__init__(self, nodes)
+        self.name = "blinky"
+        self.color = RED
+
+
+class Pinky(Ghost):
+    def __init__(self, nodes):
+        Ghost.__init__(self, nodes)
+        self.name = "pinky"
+        self.color = PINK
+
+    def scatterGoal(self):
+        self.goal = Vector2()
+
+    def chaseGoal(self, pacman, blinky=None):
+        self.goal = pacman.position + pacman.direction * TILEWIDTH * 4
+
+    def setStartPosition(self):
+        startNode = self.findStartNode()
+        self.node = startNode.neighbors[DOWN]
+        self.target = self.node
+        self.setPosition()
+
+        
+class Inky(Ghost):
+    def __init__(self, nodes):
+        Ghost.__init__(self, nodes)
+        self.name = "inky"
+        self.color = TEAL
+        self.released = False
+        self.pelletsForRelease = 30
+        
+    def scatterGoal(self):
+        self.goal = Vector2(TILEWIDTH*NCOLS, TILEHEIGHT*NROWS)
+
+    def chaseGoal(self, pacman, blinky=None):
+        vec1 = pacman.position + pacman.direction * TILEWIDTH * 2
+        vec2 = (vec1 - blinky.position) * 2
+        self.goal = blinky.position + vec2
+
+    def setStartPosition(self):
+        self.bannedDirections = [RIGHT]
+        startNode = self.findStartNode()
+        pinkyNode = startNode.neighbors[DOWN]
+        self.node = pinkyNode.neighbors[LEFT]
+        self.target = self.node
+        self.setPosition()
+
+        
+class Clyde(Ghost):
+    def __init__(self, nodes):
+        Ghost.__init__(self, nodes)
+        self.name = "clyde"
+        self.color = ORANGE
+        self.released = False
+        self.pelletsForRelease = 60
+        
+    def scatterGoal(self):
+        self.goal = Vector2(0, TILEHEIGHT*NROWS)
+
+    def chaseGoal(self, pacman, blinky=None):
+        d = pacman.position - self.position
+        ds = d.magnitudeSquared()
+        if ds <= (TILEWIDTH * 8)**2:
+            self.scatterGoal()
+        else:
+            self.goal = pacman.position + pacman.direction * TILEWIDTH * 4
+
+    def setStartPosition(self):
+        self.bannedDirections = [LEFT]
+        startNode = self.findStartNode()
+        pinkyNode = startNode.neighbors[DOWN]
+        self.node = pinkyNode.neighbors[RIGHT]
+        self.target = self.node
+        self.setPosition()
+
+        
+class GhostGroup(object):
+    def __init__(self, nodes):
+        self.nodes = nodes
+        self.ghosts = [Blinky(nodes), Pinky(nodes), Inky(nodes), Clyde(nodes)]
+
+    def __iter__(self):
+        return iter(self.ghosts)
+
+    def update(self, dt, pacman):
+        for ghost in self:
+            ghost.update(dt, pacman, self.ghosts[0])
+
+    def freightMode(self):
+        for ghost in self:
+            ghost.freightMode()
+
+    def release(self, numPelletsEaten):
+        for ghost in self:
+            if not ghost.released:
+                if numPelletsEaten >= ghost.pelletsForRelease:
+                    ghost.bannedDirections = []
+                    ghost.spawnMode()
+                    ghost.released = True
+                    
+    def render(self, screen):
+        for ghost in self:
+            ghost.render(screen)

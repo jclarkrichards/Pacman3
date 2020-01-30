@@ -9,7 +9,12 @@ class Pacman(MazeRunner):
         MazeRunner.__init__(self, nodes)
         self.name = "pacman"
         self.color = YELLOW
+        self.setStartPosition()
+        self.lives = 5
 
+    def reset(self):
+        self.setStartPosition()
+        
     def update(self, dt):
         self.position += self.direction*self.speed*dt
         direction = self.getValidKey()
@@ -69,10 +74,45 @@ class Pacman(MazeRunner):
                 return pellet
         return None
 
-    def eatGhost(self, ghost):
-        d = self.position - ghost.position
+    def eatGhost(self, ghosts):
+        for ghost in ghosts:
+            d = self.position - ghost.position
+            dSquared = d.magnitudeSquared()
+            rSquared = (self.collideRadius + ghost.collideRadius)**2
+            if dSquared <= rSquared:
+                return ghost
+        return None
+
+    def eatFruit(self, fruit):
+        d = self.position - fruit.position
         dSquared = d.magnitudeSquared()
-        rSquared = (self.collideRadius + ghost.collideRadius)**2
+        rSquared = (self.collideRadius+fruit.collideRadius)**2
         if dSquared <= rSquared:
             return True
         return False
+    
+    def findStartNode(self):
+        for node in self.nodes.nodeList:
+            if node.pacmanStart:
+                return node
+        return node
+
+    def setStartPosition(self):
+        self.direction = LEFT
+        self.node = self.findStartNode()
+        self.target = self.node.neighbors[self.direction]
+        self.setPosition()
+        self.position.x -= (self.node.position.x - self.target.position.x) / 2
+
+    def decreaseLives(self):
+        self.lives -= 1
+        if self.lives == 0:
+            return True
+        return False
+
+    def render(self, screen):
+        MazeRunner.render(self, screen)
+        for i in range(self.lives-1):
+            x = 5 + self.radius + (2*self.radius + 5)*i
+            y = TILEHEIGHT *(NROWS-1)
+            pygame.draw.circle(screen, self.color, (x, y), self.radius)
