@@ -17,6 +17,9 @@ class MazeRunner(object):
         self.image = None
         self.spritesheet = spritesheet
 
+    def updateNodes(self, nodes):
+        self.nodes = nodes
+        
     def setPosition(self):
         self.position = self.node.position.copy()
         

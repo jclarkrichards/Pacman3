@@ -17,7 +17,7 @@ class Pacman(MazeRunner):
         self.animation = None
         self.animations = {}
         self.defineAnimations()
-        
+
     def reset(self):
         self.setStartPosition()
         self.image = self.startImage#########

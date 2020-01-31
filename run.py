@@ -5,7 +5,7 @@ from pacman import Pacman, LifeIcon
 from nodes import NodeGroup
 from pellets import PelletGroup
 from ghosts import GhostGroup
-from fruit import Fruit
+from fruit import Fruit, FruitTrophy
 from sprites import Spritesheet
 from maze import Maze
 from text import Text
@@ -23,6 +23,7 @@ class GameController(object):
         self.levelLabel = Text(str(self.level).zfill(2), WHITE, 368, 16, 16)
         self.sheet = Spritesheet()
         self.maze = Maze(self.sheet)
+        self.trophies = FruitTrophy()
         
     def setBackground(self):
         self.background = pygame.surface.Surface(SCREENSIZE).convert()
@@ -52,8 +53,20 @@ class GameController(object):
         self.fruit = None
 
     def nextLevel(self):
-        self.restartLevel()
         self.level += 1
+        self.maze.setup(self.level)
+        self.nodes = NodeGroup(self.maze.filename+".txt")
+        self.pellets = PelletGroup(self.maze.filename+".txt")
+        self.pacman.updateNodes(self.nodes)
+        self.pacman.reset()
+        self.ghosts = GhostGroup(self.nodes, self.sheet)
+        self.paused = True
+        self.fruit = None
+        self.pelletsEaten = 0
+        self.lifeIcons = LifeIcon(self.sheet)
+        self.maze.stitchMaze(self.background)
+        self.pellets = PelletGroup(self.maze.filename+".txt")
+        self.levelLabel.updateText(str(self.level).zfill(2))
         
     def update(self):
         dt = self.clock.tick(30) / 1000.0
@@ -84,7 +97,7 @@ class GameController(object):
             self.ghosts.resetPoints()
             if (self.pelletsEaten == 70 or self.pelletsEaten == 140):
                 if self.fruit is None:
-                    self.fruit = Fruit(self.nodes, self.sheet)
+                    self.fruit = Fruit(self.nodes, self.sheet, self.level)
             self.pellets.pelletList.remove(pellet)
             if pellet.name == "powerpellet":
                 self.ghosts.freightMode()
@@ -109,6 +122,7 @@ class GameController(object):
         if self.fruit is not None:
             if self.pacman.eatFruit(self.fruit):
                 self.updateScores(self.fruit.points)
+                self.trophies.add(self.fruit.name, self.fruit.collect())
                 self.fruit = None
             else:
                 if self.fruit.killme:
@@ -136,6 +150,7 @@ class GameController(object):
         self.scoreLabel.render(self.screen)
         self.hiscoreLabel.render(self.screen)
         self.levelLabel.render(self.screen)
+        self.trophies.render(self.screen)
         pygame.display.update()
 
 
