@@ -24,9 +24,21 @@ class GameController(object):
         self.sheet = Spritesheet()
         self.maze = Maze(self.sheet)
         self.trophies = FruitTrophy()
+        self.startLabel = Text("START!", RED, 190, 320, 16)
+        self.pauseLabel = Text("PAUSED!", RED, 180, 320, 16)
+        self.started = False
+        self.pausedByPlayer = False
+        self.pauseTime = 0
+        self.timer = 0
+        self.nextLevelAfterPause = False
+        self.flash_background = False
+        self.flash_rate = 0.2
+        self.flashtime = 0
+        self.show_white_background = False
         
     def setBackground(self):
         self.background = pygame.surface.Surface(SCREENSIZE).convert()
+        self.background_white = pygame.surface.Surface(SCREENSIZE).convert()
         self.background.fill(BLACK)
 
     def startGame(self):
@@ -39,18 +51,36 @@ class GameController(object):
         self.fruit = None
         self.pelletsEaten = 0
         self.lifeIcons = LifeIcon(self.sheet)
-        self.maze.stitchMaze(self.background)
+        self.maze.stitchMaze(self.background, self.background_white)
         self.hiScoreTxtStatic = Text("HI SCORE", WHITE, 0, 0, 16)
         self.scoreTxtStatic = Text("SCORE", WHITE, 208, 0, 16)
         self.levelTxtStatic = Text("LEVEL", WHITE, 368, 0, 16)
         self.score = 0
         self.scoreLabel = Text(str(self.score).zfill(8), WHITE, 208, 16, 16)
+        self.started = False
+        self.pausedByPlayer = False
+        self.pauseTime = 0
+        self.timer = 0
+        self.nextLevelAfterPause = False
+        self.flash_background = False
+        self.flash_rate = 0.2
+        self.flashtime = 0
+        self.show_white_background = False
         
     def restartLevel(self):
         self.pacman.reset()
         self.ghosts = GhostGroup(self.nodes, self.sheet)
         self.paused = True
+        self.started = False
+        self.pausedByPlayer = False
         self.fruit = None
+        self.pauseTime = 0
+        self.timer = 0
+        self.nextLevelAfterPause = False
+        self.flash_background = False
+        self.flash_rate = 0.2
+        self.flashtime = 0
+        self.show_white_background = False
 
     def nextLevel(self):
         self.level += 1
@@ -61,21 +91,49 @@ class GameController(object):
         self.pacman.reset()
         self.ghosts = GhostGroup(self.nodes, self.sheet)
         self.paused = True
+        self.started = False
+        self.pausedByPlayer = False
         self.fruit = None
         self.pelletsEaten = 0
         self.lifeIcons = LifeIcon(self.sheet)
-        self.maze.stitchMaze(self.background)
+        self.maze.stitchMaze(self.background, self.background_white)
         self.pellets = PelletGroup(self.maze.filename+".txt")
         self.levelLabel.updateText(str(self.level).zfill(2))
+        self.pauseTime = 0
+        self.timer = 0
+        self.nextLevelAfterPause = False
+        self.flash_background = False
+        self.flash_rate = 0.2
+        self.flashtime = 0
+        self.show_white_background = False
         
     def update(self):
         dt = self.clock.tick(30) / 1000.0
+        self.pellets.update(dt)
         if not self.paused:
             self.pacman.update(dt)
             self.ghosts.update(dt, self.pacman)
             if self.fruit is not None:
                 self.fruit.update(dt)
         self.checkEvents()
+
+
+        if self.pauseTime > 0:
+            self.paused = True
+            self.timer += dt
+            if self.timer >= self.pauseTime:
+                self.paused = False
+                self.pauseTime = 0
+                self.timer = 0
+                if self.nextLevelAfterPause:
+                    self.nextLevel()
+
+        if self.flash_background:
+            self.flashtime += dt
+            if self.flashtime >= self.flash_rate:
+                self.flashtime = 0
+                self.show_white_background = not self.show_white_background
+
         self.render()
 
     def checkEvents(self):
@@ -84,7 +142,10 @@ class GameController(object):
                 exit()
             elif event.type == KEYDOWN:
                 if event.key == K_SPACE:
+                    self.started = True
                     self.paused = not self.paused
+                    self.pausedByPlayer = self.paused
+
         self.checkPelletEvents()
         self.checkGhostEvents()
         self.checkFruitEvents()
@@ -102,13 +163,16 @@ class GameController(object):
             if pellet.name == "powerpellet":
                 self.ghosts.freightMode()
             if self.pellets.isEmpty():
-                self.nextLevel()
+                self.pauseTime = 3
+                self.nextLevelAfterPause = True
+                self.flash_background = True
 
     def checkGhostEvents(self):
         self.ghosts.release(self.pelletsEaten)
         ghost = self.pacman.eatGhost(self.ghosts)
         if ghost is not None:
             if ghost.mode.name == "FREIGHT":
+                self.pauseTime = 0.5
                 ghost.spawnMode()
                 self.updateScores(self.ghosts.points)
                 self.ghosts.doublePoints()
@@ -136,13 +200,16 @@ class GameController(object):
             self.hiscoreLabel.updateText(str(self.hiscore).zfill(8))
 
     def render(self):
-        self.screen.blit(self.background, (0, 0))
-        #self.nodes.render(self.screen)
+        if self.show_white_background:
+            self.screen.blit(self.background_white, (0,0))
+        else:
+            self.screen.blit(self.background, (0, 0))
         self.pellets.render(self.screen)
         if self.fruit is not None:
             self.fruit.render(self.screen)
-        self.pacman.render(self.screen)
-        self.ghosts.render(self.screen)
+        if not self.paused or not self.started:
+            self.pacman.render(self.screen)
+            self.ghosts.render(self.screen)
         self.lifeIcons.render(self.screen, self.pacman.lives-1)
         self.hiScoreTxtStatic.render(self.screen)
         self.scoreTxtStatic.render(self.screen)
@@ -151,6 +218,11 @@ class GameController(object):
         self.hiscoreLabel.render(self.screen)
         self.levelLabel.render(self.screen)
         self.trophies.render(self.screen)
+        
+        if self.pausedByPlayer:
+            self.pauseLabel.render(self.screen)
+        if not self.started:
+            self.startLabel.render(self.screen)
         pygame.display.update()
 
 

@@ -21,13 +21,15 @@ class Maze(object):
         index = (level-1) % len(self.mazes)
         self.filename = self.mazes[index]["filename"]
         self.imageRow = self.mazes[index]["row"]
-        self.images = []
-        self.getMazeImages()
+        self.images = self.getMazeImages()
+        self.images_flash = self.getMazeImages(11)
         self.getMaze(self.filename)
         
-    def getMazeImages(self): 
+    def getMazeImages(self, offset=0):
+        images = []
         for i in range(10): 
-            self.images.append(self.spritesheet.getImage(i, self.imageRow, TILEWIDTH, TILEHEIGHT))
+            images.append(self.spritesheet.getImage(i+offset, self.imageRow, TILEWIDTH, TILEHEIGHT))
+        return images
 
     def rotate(self, image, value): 
         return pygame.transform.rotate(image, value*90)
@@ -41,9 +43,10 @@ class Maze(object):
         self.mazeInfo = self.readMazeFile(txtfile+".txt")
         self.rotateInfo = self.readMazeFile(txtfile+"_rot.txt")
 
-    def stitchMaze(self, background): 
+    def stitchMaze(self, background, background_flash):
         rows = len(self.mazeInfo)
         cols = len(self.mazeInfo[0])
+        
         for row in range(rows): 
             for col in range(cols): 
                 x = col * TILEWIDTH
@@ -56,6 +59,9 @@ class Maze(object):
                     if self.rotateInfo is not None: 
                         rotVal = self.rotateInfo[row][col]
                         image = self.rotate(self.images[val], int(rotVal))
-                        background.blit(image, (x, y)) 
+                        image_flash = self.rotate(self.images_flash[val], int(rotVal))
+                        background.blit(image, (x, y))
+                        background_flash.blit(image_flash, (x, y))
                     else: 
-                        background.blit(self.images[val], (x, y)) 
+                        background.blit(self.images[val], (x, y))
+                        background_flash.blit(self.images_flash[val], (x, y))
