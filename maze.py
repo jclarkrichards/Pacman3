@@ -14,8 +14,13 @@ class Maze(object):
     def defineMazes(self):
         self.mazes = {}
         self.mazes[0] = {"filename":"maze1", "row":16}
-        self.mazes[1] = {"filename":"maze1", "row":17}
-        self.mazes[2] = {"filename":"maze1", "row":18}
+        self.mazes[1] = {"filename":"maze2", "row":17}##
+        self.mazes[2] = {"filename":"maze3", "row":18}
+        self.mazes[3] = {"filename":"maze4", "row":19}###
+        self.mazes[4] = {"filename":"maze1", "row":18}###
+        self.mazes[5] = {"filename":"maze2", "row":17}###
+        self.mazes[6] = {"filename":"maze3", "row":16}###
+        self.mazes[7] = {"filename":"maze4", "row":19}###
     
     def setup(self, level):
         index = (level-1) % len(self.mazes)

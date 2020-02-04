@@ -17,12 +17,14 @@ class Pacman(MazeRunner):
         self.animation = None
         self.animations = {}
         self.defineAnimations()
-        self.alive = True#####
+        self.alive = True
+        self.startDeathAnimation = False
         
     def reset(self):
         self.setStartPosition()
         self.image = self.startImage
-        self.alive = True ###
+        self.alive = True
+        self.startDeathAnimation = False
         
     def update(self, dt):
         self.position += self.direction*self.speed*dt
@@ -34,7 +36,7 @@ class Pacman(MazeRunner):
         self.updateAnimation(dt)
 
     def updateAnimation(self, dt):
-        if self.alive:###
+        if self.alive:
             if self.direction == UP: 
                 self.animation = self.animations["up"] 
             elif self.direction == DOWN: 
@@ -45,9 +47,12 @@ class Pacman(MazeRunner):
                 self.animation = self.animations["right"] 
             elif self.direction == STOP: 
                 self.animation = self.animations["idle"]
-        else:###
-            self.animation = self.animations["death"]###
-
+        else:
+            if not self.startDeathAnimation:
+                self.animation = self.animations["death"]
+                self.animation.col = 0
+                self.startDeathAnimation = True
+                
         self.image = self.animation.getFrame(dt) 
 
     def getValidKey(self):
@@ -133,16 +138,7 @@ class Pacman(MazeRunner):
 
     def decreaseLives(self):
         self.lives -= 1
-        if self.lives == 0:
-            self.alive = False
-            #return True
-        #return False
-
-    ####
-    #def showDeath(self):
-    #    self.animation = self.animations["death"]
         
-    ####
     def defineAnimations(self): 
         anim = Animation("ping")
         anim.speed = 20

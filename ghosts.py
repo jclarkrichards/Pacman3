@@ -39,9 +39,8 @@ class Ghost(MazeRunner):
             self.spawnGoal()
 
         self.moveBySelf()
+        self.portalSlowdown()
         self.updateAnimation(dt)
-        #if self.name == "pinky":
-        #    print(self.mode.name)
 
     def updateAnimation(self, dt):
         if self.mode.name in ["CHASE", "SCATTER", "GUIDE"]:
@@ -53,8 +52,12 @@ class Ghost(MazeRunner):
                 self.animation = self.animations["left"] 
             elif self.direction == RIGHT: 
                 self.animation = self.animations["right"] 
-        elif self.mode.name == "FREIGHT": 
-            self.animation = self.animations["freight"] 
+        elif self.mode.name == "FREIGHT":
+            if self.modeTimer < (self.mode.time - 2):
+                self.animation = self.animations["freight"]
+            else:
+                self.animation = self.animations["flash"]
+                
         elif self.mode.name == "SPAWN":
             if self.free:
                 if self.direction == UP: 
@@ -89,7 +92,8 @@ class Ghost(MazeRunner):
             if self.modeTimer >= self.mode.time:
                 self.mode = self.modeStack.pop()
                 self.modeTimer = 0
-
+                self.reverseDirection()
+                
     def getValidDirections(self):
         validDirections = []
         for key in self.node.neighbors.keys():
@@ -113,6 +117,11 @@ class Ghost(MazeRunner):
         index = randint(0, len(validDirections) - 1)
         return validDirections[index]
 
+    def portalSlowdown(self):
+        self.speed = 100
+        if self.node.portalNode or self.target.portalNode:
+            self.speed = 50
+    
     def moveBySelf(self):
         if self.overshotTarget():
             self.node = self.target
@@ -166,8 +175,12 @@ class Ghost(MazeRunner):
 
     def freightMode(self):
         if self.released:
+            #self.reverseDirection()#######
+            #print("FREIGHT")#########
             if self.mode.name != "SPAWN":
                 if self.mode.name != "FREIGHT": #In SCATTER, CHASE, or GUIDE
+                    if self.mode.name != "GUIDE":
+                        self.reverseDirection()
                     if self.mode.time is not None:
                         dt = self.mode.time - self.modeTimer
                         self.modeStack.push(Mode(name=self.mode.name, time=dt))
@@ -245,7 +258,9 @@ class Ghost(MazeRunner):
         
         anim = Animation("loop")
         anim.speed = 10
+        anim.addFrame(self.spritesheet.getImage(0, 6, 32, 32))
         anim.addFrame(self.spritesheet.getImage(2, 6, 32, 32))
+        anim.addFrame(self.spritesheet.getImage(1, 6, 32, 32))
         anim.addFrame(self.spritesheet.getImage(3, 6, 32, 32))
         self.animations["flash"] = anim
         

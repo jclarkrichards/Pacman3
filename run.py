@@ -31,14 +31,15 @@ class GameController(object):
         self.pauseTime = 0
         self.timer = 0
         self.nextLevelAfterPause = False
-        self.startAfterPause = False ###
-        self.restartAfterPause = False ####
+        self.startAfterPause = False
+        self.restartAfterPause = False
         self.flash_background = False
         self.flash_rate = 0.2
         self.flashtime = 0
         self.show_white_background = False
         self.ghost_score = None
         self.fruit_score = None
+        self.gameover = False
         
     def setBackground(self):
         self.background = pygame.surface.Surface(SCREENSIZE).convert()
@@ -46,6 +47,7 @@ class GameController(object):
         self.background.fill(BLACK)
 
     def startGame(self):
+        print("Restarting the game")
         self.maze.setup(self.level)
         self.nodes = NodeGroup(self.maze.filename+".txt")
         self.pellets = PelletGroup(self.maze.filename+".txt")
@@ -66,14 +68,16 @@ class GameController(object):
         self.pauseTime = 0
         self.timer = 0
         self.nextLevelAfterPause = False
-        self.startAfterPause = False ###
-        self.restartAfterPause = False ####
+        self.startAfterPause = False
+        self.restartAfterPause = False
         self.flash_background = False
         self.flash_rate = 0.2
         self.flashtime = 0
         self.show_white_background = False
+        self.gameover = False
         
     def restartLevel(self):
+        print("Restarting the level")
         self.pacman.reset()
         self.ghosts = GhostGroup(self.nodes, self.sheet)
         self.paused = True
@@ -83,8 +87,9 @@ class GameController(object):
         self.pauseTime = 0
         self.timer = 0
         self.nextLevelAfterPause = False
-        self.startAfterPause = False ###
-        self.restartAfterPause = False ####
+        self.startAfterPause = False
+        self.restartAfterPause = False
+        self.gameover = False
         self.flash_background = False
         self.flash_rate = 0.2
         self.flashtime = 0
@@ -110,8 +115,9 @@ class GameController(object):
         self.pauseTime = 0
         self.timer = 0
         self.nextLevelAfterPause = False
-        self.startAfterPause = False ###
-        self.restartAfterPause = False ####
+        self.startAfterPause = False
+        self.restartAfterPause = False
+        self.gameover = False
         self.flash_background = False
         self.flash_rate = 0.2
         self.flashtime = 0
@@ -125,10 +131,10 @@ class GameController(object):
             self.ghosts.update(dt, self.pacman)
             if self.fruit is not None:
                 self.fruit.update(dt)
-        else:####
-            if not self.pacman.alive:##
-                #print("death")#
-                self.pacman.updateAnimation(dt)####
+        else:
+            if not self.pacman.alive:
+                print("death sequence")
+                self.pacman.updateAnimation(dt)
         self.checkEvents()
 
 
@@ -142,10 +148,10 @@ class GameController(object):
                 self.ghost_score = None
                 if self.nextLevelAfterPause:
                     self.nextLevel()
-                if self.startAfterPause:##
-                    self.startGame()##
-                if self.restartAfterPause:##
-                    self.restartLevel()##
+                if self.startAfterPause:
+                    self.startGame()
+                if self.restartAfterPause:
+                    self.restartLevel()
                     
         if self.flash_background:
             self.flashtime += dt
@@ -170,9 +176,10 @@ class GameController(object):
                     self.paused = not self.paused
                     self.pausedByPlayer = self.paused
 
-        self.checkPelletEvents()
-        self.checkGhostEvents()
-        self.checkFruitEvents()
+        if not self.paused:
+            self.checkPelletEvents()
+            self.checkGhostEvents()
+            self.checkFruitEvents()
         
     def checkPelletEvents(self):
         pellet = self.pacman.eatPellets(self.pellets.pelletList)
@@ -202,16 +209,16 @@ class GameController(object):
                 self.updateScores(self.ghosts.points)
                 self.ghosts.doublePoints()
             elif ghost.mode.name != "SPAWN":
-                self.paused = True####
-                self.pauseTime = 2###
-                self.pacman.decreaseLives()###
-                #self.pacman.showDeath()###
-                #if self.pacman.decreaseLives():
-                if not self.pacman.alive:
-                    #self.startGame()
+                self.pacman.alive = False
+                self.paused = True
+                self.pauseTime = 2
+                self.pacman.decreaseLives()
+                self.gameover = self.pacman.lives == 0
+                if self.gameover:
+                    print("All of Pacmans lives are gone")
                     self.startAfterPause = True
                 else:
-                    #self.restartLevel()
+                    print("Lost a life, but still going")
                     self.restartAfterPause = True
 
     def checkFruitEvents(self):
@@ -244,8 +251,6 @@ class GameController(object):
         if not self.paused or not self.started:
             self.pacman.render(self.screen)
             self.ghosts.render(self.screen)
-        if self.paused and not self.pacman.alive:##
-            self.pacman.render(self.screen)##
         self.lifeIcons.render(self.screen, self.pacman.lives-1)
         self.hiScoreTxtStatic.render(self.screen)
         self.scoreTxtStatic.render(self.screen)
@@ -264,6 +269,9 @@ class GameController(object):
             self.ghost_score.render(self.screen)
         if self.fruit_score is not None:
             self.fruit_score.render(self.screen)
+
+        if self.paused and not self.pacman.alive:
+            self.pacman.render(self.screen)
 
         pygame.display.update()
 
