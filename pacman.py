@@ -17,10 +17,12 @@ class Pacman(MazeRunner):
         self.animation = None
         self.animations = {}
         self.defineAnimations()
-
+        self.alive = True#####
+        
     def reset(self):
         self.setStartPosition()
-        self.image = self.startImage#########
+        self.image = self.startImage
+        self.alive = True ###
         
     def update(self, dt):
         self.position += self.direction*self.speed*dt
@@ -31,17 +33,21 @@ class Pacman(MazeRunner):
             self.moveBySelf()
         self.updateAnimation(dt)
 
-    def updateAnimation(self, dt): 
-        if self.direction == UP: 
-            self.animation = self.animations["up"] 
-        elif self.direction == DOWN: 
-            self.animation = self.animations["down"] 
-        elif self.direction == LEFT: 
-            self.animation = self.animations["left"] 
-        elif self.direction == RIGHT: 
-            self.animation = self.animations["right"] 
-        elif self.direction == STOP: 
-            self.animation = self.animations["idle"] 
+    def updateAnimation(self, dt):
+        if self.alive:###
+            if self.direction == UP: 
+                self.animation = self.animations["up"] 
+            elif self.direction == DOWN: 
+                self.animation = self.animations["down"] 
+            elif self.direction == LEFT: 
+                self.animation = self.animations["left"] 
+            elif self.direction == RIGHT: 
+                self.animation = self.animations["right"] 
+            elif self.direction == STOP: 
+                self.animation = self.animations["idle"]
+        else:###
+            self.animation = self.animations["death"]###
+
         self.image = self.animation.getFrame(dt) 
 
     def getValidKey(self):
@@ -128,9 +134,15 @@ class Pacman(MazeRunner):
     def decreaseLives(self):
         self.lives -= 1
         if self.lives == 0:
-            return True
-        return False
+            self.alive = False
+            #return True
+        #return False
 
+    ####
+    #def showDeath(self):
+    #    self.animation = self.animations["death"]
+        
+    ####
     def defineAnimations(self): 
         anim = Animation("ping")
         anim.speed = 20

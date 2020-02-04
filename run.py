@@ -31,10 +31,14 @@ class GameController(object):
         self.pauseTime = 0
         self.timer = 0
         self.nextLevelAfterPause = False
+        self.startAfterPause = False ###
+        self.restartAfterPause = False ####
         self.flash_background = False
         self.flash_rate = 0.2
         self.flashtime = 0
         self.show_white_background = False
+        self.ghost_score = None
+        self.fruit_score = None
         
     def setBackground(self):
         self.background = pygame.surface.Surface(SCREENSIZE).convert()
@@ -62,6 +66,8 @@ class GameController(object):
         self.pauseTime = 0
         self.timer = 0
         self.nextLevelAfterPause = False
+        self.startAfterPause = False ###
+        self.restartAfterPause = False ####
         self.flash_background = False
         self.flash_rate = 0.2
         self.flashtime = 0
@@ -77,6 +83,8 @@ class GameController(object):
         self.pauseTime = 0
         self.timer = 0
         self.nextLevelAfterPause = False
+        self.startAfterPause = False ###
+        self.restartAfterPause = False ####
         self.flash_background = False
         self.flash_rate = 0.2
         self.flashtime = 0
@@ -102,6 +110,8 @@ class GameController(object):
         self.pauseTime = 0
         self.timer = 0
         self.nextLevelAfterPause = False
+        self.startAfterPause = False ###
+        self.restartAfterPause = False ####
         self.flash_background = False
         self.flash_rate = 0.2
         self.flashtime = 0
@@ -115,6 +125,10 @@ class GameController(object):
             self.ghosts.update(dt, self.pacman)
             if self.fruit is not None:
                 self.fruit.update(dt)
+        else:####
+            if not self.pacman.alive:##
+                #print("death")#
+                self.pacman.updateAnimation(dt)####
         self.checkEvents()
 
 
@@ -125,14 +139,24 @@ class GameController(object):
                 self.paused = False
                 self.pauseTime = 0
                 self.timer = 0
+                self.ghost_score = None
                 if self.nextLevelAfterPause:
                     self.nextLevel()
-
+                if self.startAfterPause:##
+                    self.startGame()##
+                if self.restartAfterPause:##
+                    self.restartLevel()##
+                    
         if self.flash_background:
             self.flashtime += dt
             if self.flashtime >= self.flash_rate:
                 self.flashtime = 0
                 self.show_white_background = not self.show_white_background
+
+        if self.fruit_score is not None:
+            self.fruit_score.update(dt)
+            if self.fruit_score.hide:
+                self.fruit_score = None
 
         self.render()
 
@@ -173,20 +197,30 @@ class GameController(object):
         if ghost is not None:
             if ghost.mode.name == "FREIGHT":
                 self.pauseTime = 0.5
+                self.ghost_score = Text(str(self.ghosts.points), WHITE, ghost.position.x, ghost.position.y, 8)
                 ghost.spawnMode()
                 self.updateScores(self.ghosts.points)
                 self.ghosts.doublePoints()
             elif ghost.mode.name != "SPAWN":
-                if self.pacman.decreaseLives():
-                    self.startGame()
+                self.paused = True####
+                self.pauseTime = 2###
+                self.pacman.decreaseLives()###
+                #self.pacman.showDeath()###
+                #if self.pacman.decreaseLives():
+                if not self.pacman.alive:
+                    #self.startGame()
+                    self.startAfterPause = True
                 else:
-                    self.restartLevel()
+                    #self.restartLevel()
+                    self.restartAfterPause = True
 
     def checkFruitEvents(self):
         if self.fruit is not None:
             if self.pacman.eatFruit(self.fruit):
                 self.updateScores(self.fruit.points)
                 self.trophies.add(self.fruit.name, self.fruit.collect())
+                self.fruit_score = Text(str(self.fruit.points), WHITE, self.fruit.position.x, self.fruit.position.y, 8)
+                self.fruit_score.lifespan = 1
                 self.fruit = None
             else:
                 if self.fruit.killme:
@@ -210,6 +244,8 @@ class GameController(object):
         if not self.paused or not self.started:
             self.pacman.render(self.screen)
             self.ghosts.render(self.screen)
+        if self.paused and not self.pacman.alive:##
+            self.pacman.render(self.screen)##
         self.lifeIcons.render(self.screen, self.pacman.lives-1)
         self.hiScoreTxtStatic.render(self.screen)
         self.scoreTxtStatic.render(self.screen)
@@ -223,6 +259,12 @@ class GameController(object):
             self.pauseLabel.render(self.screen)
         if not self.started:
             self.startLabel.render(self.screen)
+
+        if self.ghost_score is not None:
+            self.ghost_score.render(self.screen)
+        if self.fruit_score is not None:
+            self.fruit_score.render(self.screen)
+
         pygame.display.update()
 
 

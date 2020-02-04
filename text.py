@@ -12,8 +12,7 @@ class Text(object):
         self.label = None
         self.font = None
         self.totalTime = 0
-        self.hasLifespan = False
-        self.lifespan = 1
+        self.lifespan = 0
         self.setupFont("PressStart2P.ttf")
         self.createLabel()
 
@@ -27,13 +26,13 @@ class Text(object):
         self.text = newtext
         self.createLabel()
 
-    def update(self, text): 
-        if self.hasLifespan: 
+    def update(self, dt): 
+        if self.lifespan > 0: 
             self.totalTime += dt
             if self.totalTime >= self.lifespan: 
                 self.totalTime = 0
                 self.hide = True
-                self.hasLifespan = False
+                self.lifespan = 0
 
     def render(self, screen): 
         if not self.hide: 
