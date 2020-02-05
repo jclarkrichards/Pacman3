@@ -13,7 +13,7 @@ class Maze(object):
         
     def defineMazes(self):
         self.mazes = {}
-        self.mazes[0] = {"filename":"maze1", "row":16}
+        self.mazes[0] = {"filename":"maze4", "row":16}
         self.mazes[1] = {"filename":"maze2", "row":17}##
         self.mazes[2] = {"filename":"maze3", "row":18}
         self.mazes[3] = {"filename":"maze4", "row":19}###

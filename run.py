@@ -75,6 +75,7 @@ class GameController(object):
         self.flashtime = 0
         self.show_white_background = False
         self.gameover = False
+        self.level = 1#####
         
     def restartLevel(self):
         print("Restarting the level")
@@ -96,6 +97,7 @@ class GameController(object):
         self.show_white_background = False
 
     def nextLevel(self):
+        self.setBackground()###
         self.level += 1
         self.maze.setup(self.level)
         self.nodes = NodeGroup(self.maze.filename+".txt")
@@ -245,6 +247,8 @@ class GameController(object):
             self.screen.blit(self.background_white, (0,0))
         else:
             self.screen.blit(self.background, (0, 0))
+
+        self.nodes.render(self.screen)
         self.pellets.render(self.screen)
         if self.fruit is not None:
             self.fruit.render(self.screen)

@@ -41,7 +41,9 @@ class Ghost(MazeRunner):
         self.moveBySelf()
         self.portalSlowdown()
         self.updateAnimation(dt)
-
+        if self.name == "pinky":
+            print(self.mode.name)
+            
     def updateAnimation(self, dt):
         if self.mode.name in ["CHASE", "SCATTER", "GUIDE"]:
             if self.direction == UP: 
@@ -131,6 +133,7 @@ class Ghost(MazeRunner):
             self.target = self.node.neighbors[self.direction]
             self.setPosition()
             if self.mode.name == "SPAWN":
+                if self.node.homeEntrance: print("GOING TOWARDS MY HOMIE")
                 if self.position == self.goal:
                     self.mode = Mode("GUIDE", speedMult=0.5)
             if self.mode.name == "GUIDE":

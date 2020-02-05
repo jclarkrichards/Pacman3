@@ -18,10 +18,13 @@ class Node(object):
         self.fruitStart = False
         
     def render(self, screen):
+        color = RED
+        if self.homeEntrance: color = TEAL
+        if self.spawnNode: color = WHITE
         for n in self.neighbors.keys():
             if self.neighbors[n] is not None:
                 pygame.draw.line(screen, WHITE, self.position.asTuple(), self.neighbors[n].position.asTuple(), 4)
-                pygame.draw.circle(screen, RED, self.position.asInt(), 12)
+                pygame.draw.circle(screen, color, self.position.asInt(), 12)
 
 
 class NodeGroup(object):
